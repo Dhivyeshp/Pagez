@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,18 @@ import {
   Dimensions,
   StatusBar,
   ScrollView,
+  Animated, // <-- add Animated import
 } from 'react-native';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import { Ionicons } from '@expo/vector-icons';
 import { PagezLogo } from '../../src/components/Splash';
+const GoogleLogo = require('../../src/assets/images/google-logo.png');
+const AppleLogo = require('../../src/assets/images/apple-logo.png');
+const FacebookLogo = require('../../src/assets/images/facebook-logo.png');
+const WhatsappLogo = require('../../src/assets/images/whatsapp-logo.png');
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -24,8 +30,45 @@ const bookHeaderImage = require('../../src/assets/images/book-header.png');
 const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen({ inOnboarding }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('user@example.com');
+  const [password, setPassword] = useState('password123');
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [loginDisabled, setLoginDisabled] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Prefill username and password if remembered
+  useEffect(() => {
+    (async () => {
+      // Clear any existing AsyncStorage data for demo purposes
+      await AsyncStorage.removeItem('rememberMe');
+      await AsyncStorage.removeItem('rememberedUsername');
+      await AsyncStorage.removeItem('rememberedPassword');
+      setRememberMe(false);
+    })();
+  }, []);
+
+  // Animated value for button color
+  const buttonAnim = useRef(new Animated.Value(0)).current;
+  const isLoginEnabled = username.length > 0 && password.length > 0;
+
+  // Debug: log the button state
+  console.log('Login button state:', { username, password, isLoginEnabled, loginDisabled });
+
+  useEffect(() => {
+    Animated.timing(buttonAnim, {
+      toValue: isLoginEnabled ? 1 : 0,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [isLoginEnabled]);
+
+  // Interpolate color from gray to orange
+  const buttonColor = buttonAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#BBAEA8', '#EB4D2A'], // gray to match 'Let's go...' color
+  });
 
   // Google AuthSession setup
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -43,8 +86,45 @@ export default function LoginScreen({ inOnboarding }) {
     }
   }, [response]);
 
+  // Placeholder valid usernames/emails (replace with real backend check)
+  const validUsers = ['user@example.com', 'markj', 'testuser'];
+  const [userError, setUserError] = useState('');
+
   const handleLogin = () => {
-    // TODO: Add real authentication logic here
+    // Username/email validation
+    if (!validUsers.includes(username)) {
+      setUserError('*Username or email not registered to an account*');
+      setErrorMessage('');
+      return;
+    } else {
+      setUserError('');
+    }
+    // Placeholder password check (replace with real logic)
+    const correctPassword = 'password123';
+    if (password !== correctPassword) {
+      const attempts = failedAttempts + 1;
+      setFailedAttempts(attempts);
+      if (attempts >= 3) {
+        setLoginDisabled(true);
+        setErrorMessage('*Incorrect password. You have used all your attempts; Click forgot password*');
+      } else {
+        setErrorMessage(`*Incorrect password - You have ${3 - attempts} more ${3 - attempts === 1 ? 'try' : 'tries'}*`);
+      }
+      return;
+    }
+    // Success: clear error and proceed
+    setErrorMessage('');
+    setFailedAttempts(0);
+    setLoginDisabled(false);
+    if (rememberMe) {
+      AsyncStorage.setItem('rememberMe', 'true');
+      AsyncStorage.setItem('rememberedUsername', username);
+      AsyncStorage.setItem('rememberedPassword', password);
+    } else {
+      AsyncStorage.setItem('rememberMe', 'false');
+      AsyncStorage.removeItem('rememberedUsername');
+      AsyncStorage.removeItem('rememberedPassword');
+    }
     router.replace('/home' as any);
   };
 
@@ -71,8 +151,8 @@ export default function LoginScreen({ inOnboarding }) {
     //    - Add proper user profile data handling
     //    - Consider implementing biometric authentication for additional security
 
-    // Temporary navigation to home screen
-    router.replace('/home' as any);
+    // Navigate to profile page after social login
+    router.replace('/profile' as any);
   };
 
   const handleUsePhone = () => {
@@ -130,22 +210,74 @@ export default function LoginScreen({ inOnboarding }) {
               />
             </View>
             
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor="#BBAEA8"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-              />
+            <View style={[
+              styles.inputWrapper,
+              (failedAttempts > 0 || loginDisabled) && { 
+                borderColor: '#EB4D2A', 
+                borderWidth: 2
+              }
+            ]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { flex: 1 },
+                  ]}
+                  placeholder="Password"
+                  placeholderTextColor="#BBAEA8"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!passwordVisible}
+                  editable={!loginDisabled}
+                />
+                <TouchableOpacity
+                  onPress={() => setPasswordVisible(v => !v)}
+                  style={{ padding: 8 }}
+                  accessibilityLabel={passwordVisible ? 'Hide password' : 'Show password'}
+                  disabled={loginDisabled}
+                >
+                  <Ionicons
+                    name={passwordVisible ? 'eye' : 'eye-off'}
+                    size={22}
+                    color="#BBAEA8"
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          {/* Error message for user or password */}
+          {userError ? (
+            <Text style={{ color: '#EB4D2A', marginBottom: 6, marginLeft: 8, fontWeight: '500', fontSize: 13 }}>{userError}</Text>
+          ) : errorMessage ? (
+            <Text style={{ color: '#EB4D2A', marginBottom: 6, marginLeft: 8, fontWeight: '500', fontSize: 13 }}>{errorMessage}</Text>
+          ) : null}
+            {/* Remember me and Forgot password row */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }} onPress={() => setRememberMe(v => !v)}>
+                <Ionicons
+                  name={rememberMe ? 'checkbox' : 'square-outline'}
+                  size={20}
+                  color={rememberMe ? '#EB4D2A' : '#BBAEA8'}
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={{ color: rememberMe ? '#EB4D2A' : '#1E1E1E', fontWeight: '500', fontSize: 15 }}>Remember me</Text>
+              </TouchableOpacity>
+              <TouchableOpacity>
+                <Text style={{ color: '#EB4D2A', fontWeight: '500', fontSize: 15 }} onPress={() => router.push('/(auth)/forgot-password')}>Forgot password?</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
           {/* Login Button */}
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-            <Text style={styles.loginButtonText}>Login</Text>
-          </TouchableOpacity>
+          <Animated.View style={[styles.loginButton, { backgroundColor: buttonColor }]}> 
+            <TouchableOpacity
+              onPress={handleLogin}
+              disabled={false}
+              style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.loginButtonText}>Login</Text>
+            </TouchableOpacity>
+          </Animated.View>
 
           {/* Use phone number instead */}
           <TouchableOpacity onPress={handleUsePhone} style={styles.phoneLink}>
@@ -157,18 +289,36 @@ export default function LoginScreen({ inOnboarding }) {
             <Text style={styles.socialTitle}>Or continue using...</Text>
             
             <View style={styles.socialButtons}>
+              {/* Apple */}
               <TouchableOpacity 
-                style={styles.socialButton} 
+                style={[styles.socialButton, { backgroundColor: '#fff', borderWidth: 1, borderColor: '#E0E0E0' }]} 
                 onPress={() => handleSocialLogin('Apple')}
               >
-                <Ionicons name="logo-apple" size={24} color="#FFFFFF" />
+                <Image source={AppleLogo} style={{ width: 26, height: 26, resizeMode: 'contain' }} />
               </TouchableOpacity>
-              
+
+              {/* Google */}
               <TouchableOpacity 
-                style={styles.socialButton} 
+                style={[styles.socialButton, { backgroundColor: '#fff', borderWidth: 1, borderColor: '#E0E0E0' }]} 
                 onPress={() => handleSocialLogin('Google')}
               >
-                <Ionicons name="logo-google" size={24} color="#FFFFFF" />
+                <Image source={GoogleLogo} style={{ width: 26, height: 26, resizeMode: 'contain' }} />
+              </TouchableOpacity>
+
+              {/* Facebook */}
+              <TouchableOpacity 
+                style={[styles.socialButton, { backgroundColor: '#1877F3' }]} 
+                onPress={() => handleSocialLogin('Facebook')}
+              >
+                <Image source={FacebookLogo} style={{ width: 26, height: 26, resizeMode: 'contain' }} />
+              </TouchableOpacity>
+
+              {/* WhatsApp */}
+              <TouchableOpacity 
+                style={[styles.socialButton, { backgroundColor: '#25D366' }]} 
+                onPress={() => handleSocialLogin('WhatsApp')}
+              >
+                <Image source={WhatsappLogo} style={{ width: 26, height: 26, resizeMode: 'contain' }} />
               </TouchableOpacity>
             </View>
           </View>
@@ -264,10 +414,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: Math.min(50, width * 0.13),
     letterSpacing: -1,
-    marginBottom: 35, // Increased margin
+    marginBottom: 19, // Reduced margin to move content upwards
   },
   inputContainer: {
-    marginBottom: 30, // Increased margin
+    marginBottom: 16, // Reduced margin to move content upwards
   },
   inputWrapper: {
     width: '100%', // Full width
@@ -288,13 +438,19 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   loginButton: {
-    width: '100%', // Full width
-    height: 58, // Slightly taller
-    backgroundColor: '#EB4D2A',
-    borderRadius: 29,
+    height: 48,
+    borderRadius: 24,
+    marginTop: 24,
+    marginBottom: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20, // Increased margin
+    // backgroundColor removed, handled by Animated.View
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    overflow: 'hidden',
   },
   loginButtonText: {
     color: '#FFFFFF',
@@ -334,7 +490,6 @@ const styles = StyleSheet.create({
   socialButton: {
     width: 50, // Made slightly bigger
     height: 50, // Made slightly bigger
-    backgroundColor: '#1E1E1E',
     borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',

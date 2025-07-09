@@ -33,7 +33,7 @@ const papersBg = require('../../src/assets/images/papers.png');
 export default function ProfileScreen() {
   // TODO: Backend integration - fetch user profile data
   const handleBackPress = () => {
-    router.back();
+    router.replace('/(auth)/login');
   };
 
   const handleCreateAuthorAccount = () => {
