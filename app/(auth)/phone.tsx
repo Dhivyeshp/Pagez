@@ -84,14 +84,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
-    paddingTop: 25,
-    paddingBottom: 15,
+    height: 70,
+    paddingTop: 0,
+    paddingBottom: 0,
     position: 'relative',
   },
   backButton: {
     position: 'absolute',
     left: 20,
-    top: 25,
+    top: '50%',
+    marginTop: -22, // half of backButtonCircle height to center vertically
   },
   backButtonCircle: {
     width: 44,
