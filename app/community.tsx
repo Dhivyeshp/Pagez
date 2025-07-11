@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   StyleSheet,
   StatusBar,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -59,6 +60,105 @@ const mockPosts = [
   },
 ];
 
+// General community feed posts (like Twitter timeline)
+const mockCommunityFeed = [
+  {
+    id: 'feed1',
+    user: {
+      name: 'Alex Chen',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
+      currentBook: 'The Midnight Library',
+    },
+    book: {
+      title: 'The Midnight Library',
+      cover: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=100&h=150&fit=crop',
+    },
+    rating: 5,
+    maxRating: 5,
+    text: 'Just finished The Midnight Library and wow... what a beautiful exploration of life\'s infinite possibilities. Matt Haig really knows how to make you think about the choices we make. Highly recommend! 📚✨',
+    likes: '1.2k',
+    comments: '89',
+    timeAgo: '2 HOURS AGO',
+    image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=200&fit=crop',
+  },
+  {
+    id: 'feed2',
+    user: {
+      name: 'Maria Rodriguez',
+      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
+      currentBook: 'Project Hail Mary',
+    },
+    book: {
+      title: 'Project Hail Mary',
+      cover: 'https://covers.openlibrary.org/b/id/8101356-L.jpg',
+    },
+    rating: 4,
+    maxRating: 5,
+    text: 'Andy Weir does it again! Project Hail Mary is a masterpiece of sci-fi. The friendship between Grace and Rocky is everything. Science and humanity in perfect balance. 🚀👽',
+    likes: '856',
+    comments: '234',
+    timeAgo: '4 HOURS AGO',
+    image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=200&fit=crop',
+  },
+  {
+    id: 'feed3',
+    user: {
+      name: 'David Kim',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+      currentBook: 'Klara and the Sun',
+    },
+    book: {
+      title: 'Klara and the Sun',
+      cover: 'https://covers.openlibrary.org/b/id/7222246-L.jpg',
+    },
+    rating: 4,
+    maxRating: 5,
+    text: 'Kazuo Ishiguro\'s Klara and the Sun is a beautiful meditation on love, consciousness, and what it means to be human. Klara\'s perspective is so unique and touching. 🤖☀️',
+    likes: '567',
+    comments: '123',
+    timeAgo: '6 HOURS AGO',
+    image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=200&fit=crop',
+  },
+  {
+    id: 'feed4',
+    user: {
+      name: 'Sarah Johnson',
+      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
+      currentBook: 'The Seven Husbands of Evelyn Hugo',
+    },
+    book: {
+      title: 'The Seven Husbands of Evelyn Hugo',
+      cover: 'https://covers.openlibrary.org/b/id/8231856-L.jpg',
+    },
+    rating: 5,
+    maxRating: 5,
+    text: 'Taylor Jenkins Reid has done it again! This book is absolutely captivating. The way she weaves together Hollywood glamour with deep human emotions is masterful. Couldn\'t put it down! 🌟📖',
+    likes: '2.1k',
+    comments: '445',
+    timeAgo: '8 HOURS AGO',
+    image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=200&fit=crop',
+  },
+  {
+    id: 'feed5',
+    user: {
+      name: 'Michael Brown',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
+      currentBook: 'Dune',
+    },
+    book: {
+      title: 'Dune',
+      cover: 'https://covers.openlibrary.org/b/id/8101356-L.jpg',
+    },
+    rating: 5,
+    maxRating: 5,
+    text: 'Finally finished Dune after months of reading. Frank Herbert\'s world-building is unmatched. The political intrigue, the ecology of Arrakis, the Bene Gesserit... everything is so meticulously crafted. A true masterpiece. 🏜️📚',
+    likes: '1.8k',
+    comments: '312',
+    timeAgo: '12 HOURS AGO',
+    image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=200&fit=crop',
+  },
+];
+
 const mockAuthors = [
   {
     id: '1',
@@ -73,6 +173,8 @@ const mockAuthors = [
 ];
 
 export default function HomeScreen() {
+  const [refreshing, setRefreshing] = useState(false);
+
   // TODO: Replace with actual API calls
   const fetchBooks = () => {
     // API call to get trending books
@@ -86,8 +188,26 @@ export default function HomeScreen() {
     // API call to get new authors
   };
 
+  const onRefresh = () => {
+    setRefreshing(true);
+    // Simulate API call to fetch new posts
+    setTimeout(() => {
+      setRefreshing(false);
+      // In a real app, this would fetch new posts from the API
+      console.log('Refreshed community feed');
+    }, 2000);
+  };
+
   const handleSearchPress = () => {
-    router.push('/search');
+    router.push('/search?context=community');
+  };
+
+  // Function to add new post to community feed (simulating when user creates a post)
+  const addNewPostToFeed = (newPost: any) => {
+    // In a real app, this would be an API call to add the post to the database
+    // For now, we'll simulate adding to the feed
+    console.log('New post added to community feed:', newPost);
+    // mockCommunityFeed.unshift(newPost); // Add to beginning of feed
   };
 
   const handleProfilePress = () => {
@@ -95,7 +215,32 @@ export default function HomeScreen() {
   };
 
   const handleCreatePost = () => {
-    router.push('/create-post' as any);
+    // In a real app, this would navigate to a create post screen
+    // For now, we'll simulate creating a post
+    const newPost = {
+      id: `feed${Date.now()}`,
+      user: {
+        name: 'You',
+        avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+        currentBook: 'Currently Reading...',
+      },
+      book: {
+        title: 'Your Book Review',
+        cover: 'https://covers.openlibrary.org/b/id/7222246-L.jpg',
+      },
+      rating: 5,
+      maxRating: 5,
+      text: 'Just finished an amazing book! Can\'t wait to share my thoughts with the community. 📚✨',
+      likes: '0',
+      comments: '0',
+      timeAgo: 'JUST NOW',
+      image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=200&fit=crop',
+    };
+    
+    addNewPostToFeed(newPost);
+    // In a real app, this would navigate to create post screen
+    // router.push('/create-post' as any);
+    alert('Post created! (This is a simulation - in a real app, this would navigate to create post screen)');
   };
 
   const handleNavigation = (route: string) => {
@@ -252,7 +397,18 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#FF6B35']}
+            tintColor="#FF6B35"
+          />
+        }
+      >
         {/* Hot Topics Section */}
         <View style={styles.section}>
           <TouchableOpacity
@@ -278,6 +434,15 @@ export default function HomeScreen() {
             <Text style={styles.sectionTitle}>Hot in community</Text>
           </View>
           {mockPosts.map(renderCommunityPost)}
+        </View>
+
+        {/* Community Feed Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionTitleContainerWithIconNoPadding}>
+            <Ionicons name="people" size={20} color="#FF6B35" />
+            <Text style={styles.sectionTitle}>Community Feed</Text>
+          </View>
+          {mockCommunityFeed.map(renderCommunityPost)}
         </View>
 
         {/* New Authors Joined! Section */}

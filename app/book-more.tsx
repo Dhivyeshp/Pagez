@@ -11,9 +11,11 @@ import {
   Dimensions,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  Modal,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
@@ -59,6 +61,7 @@ const readerThoughts = [
 export default function BookMoreScreen() {
   const [headerHeight, setHeaderHeight] = useState(250);
   const [scrollY, setScrollY] = useState(0);
+  const [blurbVisible, setBlurbVisible] = useState(false);
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetY = event.nativeEvent.contentOffset.y;
@@ -248,7 +251,10 @@ export default function BookMoreScreen() {
 
           {/* Bottom Actions */}
           <View style={styles.bottomActions}>
-            <TouchableOpacity style={styles.communityButton}>
+            <TouchableOpacity 
+              style={styles.communityButton}
+              onPress={() => router.push(`/book-community?bookId=beloved-girls&bookTitle=Beloved Girls&bookAuthor=Sara Shepard` as any)}
+            >
               <Text style={styles.communityButtonText}>Community</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.createPostButton} onPress={() => router.push('/new-post')}>
@@ -258,7 +264,10 @@ export default function BookMoreScreen() {
 
           {/* Reading Buttons */}
           <View style={styles.readingButtons}>
-            <TouchableOpacity style={styles.blurbButton}>
+            <TouchableOpacity 
+              style={styles.blurbButton}
+              onPress={() => setBlurbVisible(true)}
+            >
               <Text style={styles.blurbButtonText}>Blurb</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.startReadingButton} onPress={() => router.push('/reader')}>
@@ -271,6 +280,39 @@ export default function BookMoreScreen() {
           <View style={styles.bottomPadding} />
         </View>
       </ScrollView>
+      {/* Blurb Modal Overlay */}
+      <Modal
+        visible={blurbVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setBlurbVisible(false)}
+      >
+        <View style={styles.blurbOverlayBackdrop}>
+          <LinearGradient
+            colors={["#f8f6f2", "#f3ede7"]}
+            style={styles.blurbBookShadow}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <View style={styles.blurbBookPage}>
+              <TouchableOpacity style={styles.blurbCloseButton} onPress={() => setBlurbVisible(false)}>
+                <Ionicons name="close" size={28} color="#333" />
+              </TouchableOpacity>
+              <Text style={styles.blurbLabel}>BLURP</Text>
+              <Text style={styles.blurbTitle}>Pretty Little Liars</Text>
+              <Text style={styles.blurbAuthor}>by Sara Shepard</Text>
+              <Text style={styles.blurbText}>
+                Brilliantly styled as a translation of an ancient epic, Victory City is a saga of love, adventure, and myth that is in itself a testament to the power of storytelling.{"\n\n"}
+                “Victory City is a triumph—not because it exists, but because it is utterly enchanting.” —The Atlantic{"\n\n"}
+                In the wake of an unimportant battle between two long-forgotten kingdoms in fourteenth-century southern India, a nine-year-old girl has a divine encounter that will change the course of history. After witnessing the death of her mother, the grief-stricken.
+              </Text>
+              <TouchableOpacity style={styles.doneReadingButton} onPress={() => setBlurbVisible(false)}>
+                <Text style={styles.doneReadingText}>Done reading</Text>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -733,5 +775,78 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+  },
+  blurbOverlayBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  blurbBookShadow: {
+    borderRadius: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.10,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  blurbBookPage: {
+    width: 340,
+    maxWidth: '95%',
+    backgroundColor: '#f8f6f2',
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: '#ede6dd',
+    paddingVertical: 32,
+    paddingHorizontal: 26,
+    alignItems: 'flex-start',
+    position: 'relative',
+  },
+  blurbCloseButton: {
+    position: 'absolute',
+    top: 18,
+    right: 18,
+    zIndex: 10,
+  },
+  blurbLabel: {
+    color: '#EB4D2A',
+    fontWeight: 'bold',
+    fontSize: 17,
+    marginBottom: 8,
+    fontFamily: 'Bogart-Bold-Trial',
+  },
+  blurbTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 4,
+    fontFamily: 'Bogart-Bold-Trial',
+  },
+  blurbAuthor: {
+    color: '#EB4D2A',
+    fontSize: 17,
+    marginBottom: 18,
+    fontFamily: 'Bogart-Regular-Trial',
+  },
+  blurbText: {
+    fontSize: 16,
+    color: '#222',
+    marginBottom: 28,
+    lineHeight: 24,
+    fontFamily: 'Bogart-Regular-Trial',
+  },
+  doneReadingButton: {
+    width: '100%',
+    backgroundColor: '#222',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  doneReadingText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+    fontFamily: 'Bogart-Bold-Trial',
   },
 });

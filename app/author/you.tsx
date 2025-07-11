@@ -86,7 +86,7 @@ export default function AuthorProfileScreen() {
   };
 
   const handleViewAllBooks = () => {
-    router.push('/books' as any);
+    router.push('/author/books');
   };
 
   const formatFollowerCount = (count: number): string => {

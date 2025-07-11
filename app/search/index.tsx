@@ -14,7 +14,7 @@ import {
   Pressable,
   ImageBackground,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../../src/components/Button';
 
@@ -109,6 +109,67 @@ const MOCK_BOOKS = [
   },
 ];
 
+// Mock community posts data
+const MOCK_COMMUNITY_POSTS = [
+  {
+    id: '1',
+    user: {
+      name: 'Samantha Jackson',
+      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face',
+      currentBook: 'Pretty Little Liars',
+    },
+    book: {
+      title: 'Love at First',
+      cover: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=100&h=150&fit=crop',
+    },
+    rating: 3,
+    maxRating: 5,
+    text: 'Fantastic book! #weeklyreadings',
+    likes: '3k',
+    comments: '354',
+    timeAgo: '20 MINS AGO',
+    image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=200&fit=crop',
+  },
+  {
+    id: '2',
+    user: {
+      name: 'John Smith',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+      currentBook: 'The Great Gatsby',
+    },
+    book: {
+      title: 'The Great Gatsby',
+      cover: 'https://covers.openlibrary.org/b/id/7222246-L.jpg',
+    },
+    rating: 5,
+    maxRating: 5,
+    text: 'Just finished this classic! Amazing storytelling and character development. Highly recommend!',
+    likes: '1.2k',
+    comments: '89',
+    timeAgo: '2 HOURS AGO',
+    image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=200&fit=crop',
+  },
+  {
+    id: '3',
+    user: {
+      name: 'Emma Wilson',
+      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
+      currentBook: 'Dune',
+    },
+    book: {
+      title: 'Dune',
+      cover: 'https://covers.openlibrary.org/b/id/8101356-L.jpg',
+    },
+    rating: 4,
+    maxRating: 5,
+    text: 'Epic sci-fi masterpiece! The world-building is incredible. #scifi #dune',
+    likes: '856',
+    comments: '234',
+    timeAgo: '5 HOURS AGO',
+    image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&h=200&fit=crop',
+  },
+];
+
 const KEYBOARD_LAYOUT = [
   ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
   ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
@@ -144,12 +205,21 @@ const MOCK_AGE_RATINGS = ['3+', '13+'];
 const papersBg = require('../../src/assets/images/papers.png');
 
 export default function HomeScreen() {
+  const params = useLocalSearchParams();
   const [searchText, setSearchText] = useState('');
   const [filterVisible, setFilterVisible] = useState(false);
   const [selectedRating, setSelectedRating] = useState(4);
   const [activeFilter, setActiveFilter] = useState(null); // 'author', 'genre', etc.
   const [authorSearch, setAuthorSearch] = useState('');
   const [selectedAuthor, setSelectedAuthor] = useState(null);
+  const [searchContext, setSearchContext] = useState('library'); // 'library' or 'community'
+
+  // Set search context based on URL parameters
+  useEffect(() => {
+    if (params.context === 'community') {
+      setSearchContext('community');
+    }
+  }, [params.context]);
 
   // TODO: Backend integration - Replace with actual API call
   const handleSearch = (query: string) => {
@@ -172,11 +242,7 @@ export default function HomeScreen() {
     router.back();
   };
 
-  const renderStars = (rating, max = 5) => {
-    return Array.from({ length: max }, (_, i) => (
-      <Text key={i} style={{ color: i < rating ? '#FF6B35' : '#E0E0E0', fontSize: 18 }}>★</Text>
-    ));
-  };
+
 
   const renderBookCard = (book: typeof MOCK_BOOKS[0]) => (
     <TouchableOpacity
@@ -196,6 +262,76 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
+  const renderStars = (rating: number, maxRating: number = 5) => {
+    const stars = [];
+    for (let i = 1; i <= maxRating; i++) {
+      stars.push(
+        <Ionicons
+          key={i}
+          name={i <= rating ? 'star' : 'star-outline'}
+          size={14}
+          color={i <= rating ? '#FF6B35' : '#DDD'}
+        />
+      );
+    }
+    return stars;
+  };
+
+  const renderCommunityPost = (post: typeof MOCK_COMMUNITY_POSTS[0]) => (
+    <View key={post.id} style={styles.postContainer}>
+      <View style={styles.postHeader}>
+        <TouchableOpacity
+          style={styles.userInfo}
+          onPress={() => router.push(`/profile/${post.user.name}` as any)}
+        >
+          <Image source={{ uri: post.user.avatar }} style={styles.avatar} />
+          <View>
+            <Text style={styles.userName}>{post.user.name}</Text>
+            <Text style={styles.userActivity}>Reading "{post.user.currentBook}"</Text>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push('/post-options' as any)}>
+          <Ionicons name="ellipsis-horizontal" size={20} color="#999" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.postContent}>
+        <Image source={{ uri: post.image }} style={styles.postImage} />
+        <View style={styles.bookInfo}>
+          <Image source={{ uri: post.book.cover }} style={styles.smallBookCover} />
+          <View style={styles.ratingContainer}>
+            <View style={styles.stars}>
+              {renderStars(post.rating, post.maxRating)}
+            </View>
+            <Text style={styles.ratingText}>{post.rating}/{post.maxRating}</Text>
+          </View>
+        </View>
+      </View>
+
+      <Text style={styles.postText}>{post.text}</Text>
+
+      <View style={styles.postFooter}>
+        <View style={styles.engagement}>
+          <TouchableOpacity
+            style={styles.engagementButton}
+            onPress={() => router.push('/like-post' as any)}
+          >
+            <Ionicons name="heart-outline" size={18} color="#666" />
+            <Text style={styles.engagementText}>{post.likes}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.engagementButton}
+            onPress={() => router.push('/comments' as any)}
+          >
+            <Ionicons name="chatbubble-outline" size={18} color="#666" />
+            <Text style={styles.engagementText}>{post.comments}</Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.timeAgo}>{post.timeAgo}</Text>
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <ImageBackground source={papersBg} style={styles.bgImage} resizeMode="cover">
@@ -212,7 +348,7 @@ export default function HomeScreen() {
             <Text style={styles.searchIcon}>🔍</Text>
             <TextInput
               style={styles.searchInput}
-              placeholder="Search Community"
+              placeholder={searchContext === 'community' ? "Search Community Posts" : "Search Library"}
               placeholderTextColor="#999"
               value={searchText}
               onChangeText={setSearchText}
@@ -235,16 +371,25 @@ export default function HomeScreen() {
         </View>
         {/* Main Content */}
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Books Grid */}
-          <View style={styles.booksGrid}>
-            {MOCK_BOOKS.map(renderBookCard)}
-          </View>
-          {/* Partial book cards at bottom */}
-          <View style={styles.partialCards}>
-            <View style={[styles.partialCard, { backgroundColor: '#E8E8E8' }]} />
-            <View style={[styles.partialCard, { backgroundColor: '#E8E8E8' }]} />
-            <View style={[styles.partialCard, { backgroundColor: '#E8E8E8' }]} />
-          </View>
+          {searchContext === 'community' ? (
+            // Community posts
+            <View style={{ padding: 16 }}>
+              {MOCK_COMMUNITY_POSTS.map(renderCommunityPost)}
+            </View>
+          ) : (
+            // Books Grid
+            <>
+              <View style={styles.booksGrid}>
+                {MOCK_BOOKS.map(renderBookCard)}
+              </View>
+              {/* Partial book cards at bottom */}
+              <View style={styles.partialCards}>
+                <View style={[styles.partialCard, { backgroundColor: '#E8E8E8' }]} />
+                <View style={[styles.partialCard, { backgroundColor: '#E8E8E8' }]} />
+                <View style={[styles.partialCard, { backgroundColor: '#E8E8E8' }]} />
+              </View>
+            </>
+          )}
         </ScrollView>
         {/* Filter Modal */}
         <Modal
@@ -665,6 +810,112 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 12,
     zIndex: 20,
+  },
+  // Community post styles
+  postContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  postHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  userName: {
+    fontSize: 16,
+    fontFamily: 'Bogart-Bold-Trial',
+    fontWeight: '700',
+    color: '#222',
+    marginBottom: 2,
+  },
+  userActivity: {
+    fontSize: 12,
+    fontFamily: 'Bogart-Regular-Trial',
+    color: '#888',
+  },
+  postContent: {
+    marginBottom: 12,
+  },
+  postImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  bookInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  smallBookCover: {
+    width: 40,
+    height: 60,
+    borderRadius: 6,
+    marginRight: 12,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stars: {
+    flexDirection: 'row',
+    marginRight: 8,
+  },
+  ratingText: {
+    fontSize: 12,
+    fontFamily: 'Bogart-Regular-Trial',
+    color: '#666',
+  },
+  postText: {
+    fontSize: 14,
+    fontFamily: 'Bogart-Regular-Trial',
+    color: '#333',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  postFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  engagement: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  engagementButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  engagementText: {
+    fontSize: 12,
+    fontFamily: 'Bogart-Regular-Trial',
+    color: '#666',
+    marginLeft: 4,
+  },
+    timeAgo: {
+    fontSize: 12,
+    fontFamily: 'Bogart-Regular-Trial',
+    color: '#999',
   },
   authorSheetHeader: {
     flexDirection: 'row',
